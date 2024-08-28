@@ -1,4 +1,4 @@
-package merklecommitment
+package merkle
 
 import (
 	"fmt"

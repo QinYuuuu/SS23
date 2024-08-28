@@ -1,4 +1,4 @@
-package merklecommitment
+package merkle
 
 // Node represent a node in a Merkle Tree.
 // It contains information including the key, hash of data, pointers to left child,
