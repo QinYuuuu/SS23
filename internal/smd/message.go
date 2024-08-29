@@ -1,8 +1,34 @@
 package smd
 
-var ECHO int = 0
-var SEND int = 1
-var VOTE int = 2
+import "fmt"
 
-type SendMessage struct {
+const (
+	SEND int = 0
+	ECHO int = 1
+	VOTE int = 2
+)
+
+type Message struct {
+	FromID     int
+	DestID     int
+	InstanceID int
+	Type       int
+	SendData   []byte
+	EchoData   []byte
+	VoteData   []byte
+}
+
+// String formats the Message for debug output.
+func (m Message) String() string {
+	t := ""
+	if m.Type == 0 {
+		t += "Send"
+	}
+	if m.Type == 1 {
+		t += "Echo"
+	}
+	if m.Type == 2 {
+		t += "Vote"
+	}
+	return fmt.Sprintf("%v from node %d", t, m.FromID)
 }

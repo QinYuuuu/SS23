@@ -5,6 +5,8 @@ type receiver struct {
 	acquired bool
 	voted    bool
 	done     bool
+	msgIn    chan Message
+	msgOut   chan Message
 }
 
 func (receiver *receiver) handleSend() {

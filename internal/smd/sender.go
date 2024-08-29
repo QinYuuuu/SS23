@@ -11,10 +11,11 @@ import (
 )
 
 type Sender struct {
-	n     int
-	t     int
-	p     *big.Int
-	coder reedsolomon.RScoder
+	n           int
+	t           int
+	p           *big.Int
+	coder       reedsolomon.RScoder
+	sendChannel chan Message
 }
 
 func encrypt(k, m []byte) []byte {
@@ -42,6 +43,7 @@ func (s *Sender) Input(message [][]byte) {
 		chunk[i] = s.coder.Encode(c[i])
 	}
 	root := make([][]byte, s.n)
+	proof := make([][]merkle.Witness, s.n)
 	for i := 0; i < s.n; i++ {
 		merkleInput := make([][]byte, 0)
 		for j := 0; j < s.n; j++ {
@@ -49,5 +51,9 @@ func (s *Sender) Input(message [][]byte) {
 		}
 		merkleTree, _ := merkle.NewMerkleTree(merkleInput, hasher.SHA256Hasher)
 		root[i] = merkle.Commit(merkleTree)
+		proof[i] = make([]merkle.Witness, s.n)
+		for j := 0; j < s.n; j++ {
+			proof[i][j], _ = merkle.CreateWitness(merkleTree, j)
+		}
 	}
 }
