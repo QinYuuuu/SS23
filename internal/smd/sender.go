@@ -11,6 +11,7 @@ import (
 )
 
 type Sender struct {
+	id          int
 	n           int
 	t           int
 	p           *big.Int

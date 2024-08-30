@@ -13,9 +13,9 @@ type Message struct {
 	DestID     int
 	InstanceID int
 	Type       int
-	SendData   []byte
-	EchoData   []byte
-	VoteData   []byte
+	SendBuf    []byte
+	EchoBuf    []byte
+	VoteBuf    []byte
 }
 
 // String formats the Message for debug output.
