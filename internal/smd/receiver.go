@@ -2,7 +2,9 @@ package smd
 
 import (
 	"github.com/QinYuuuu/SS23/crypto/merkle"
+	"github.com/vivint/infectious"
 	"log"
+	"math/big"
 )
 
 type receiver struct {
@@ -26,6 +28,22 @@ type receiver struct {
 	voteCh  chan Message // store vote msg
 	closeCh chan bool
 	log     log.Logger
+}
+
+func (receiver *receiver) Run() {
+	go receiver.handleMsgIn()
+	go receiver.handleEcho()
+	go receiver.handleVote()
+}
+
+func (receiver *receiver) sendMsg(msgs []Message) {
+	for _, msg := range msgs {
+		if msg.DestID == receiver.id {
+			receiver.msgIn <- msg
+		} else {
+			receiver.msgOut <- msg
+		}
+	}
 }
 
 // messages router
@@ -54,9 +72,9 @@ func (receiver *receiver) handleMsgIn() {
 			break
 		case 2:
 			//get a vote msg
-			if !receiver.voted {
-				receiver.voteCh <- msg
-			}
+			//receiver.log.Println("get a vote msg from ", msg.DestID)
+			receiver.voteCh <- msg
+
 			break
 		case 4:
 		default:
@@ -67,13 +85,13 @@ func (receiver *receiver) handleMsgIn() {
 
 }
 
-type echobuf struct {
+type echoBuf struct {
 	root       []byte
 	witness_i  merkle.Witness
 	root_i     []byte
 	witness_ij merkle.Witness
-	s_ij       []byte
-	f_ij       []byte
+	s_ij       []*big.Int
+	f_ij       []infectious.Share
 }
 
 func (receiver *receiver) handleEcho() {
@@ -102,17 +120,21 @@ func (receiver *receiver) handleEcho() {
 
 }
 
+type voteBuf struct {
+	root []byte
+}
+
 func (receiver *receiver) handleVote() {
-	var msg Message
+	var msgReceived Message
 	for {
 		select {
 		case <-receiver.closeCh:
 			return
 
-		case msg = <-receiver.voteCh:
+		case msgReceived = <-receiver.voteCh:
 		}
 		// get root from echo msg
-		id := msg.Type
+		id := msgReceived.Type
 		if !receiver.votes[id] {
 			receiver.votes[id] = true
 			receiver.voteNum++
@@ -121,15 +143,23 @@ func (receiver *receiver) handleVote() {
 			continue
 		}
 		if receiver.voteNum == receiver.t+1 && !receiver.voted {
-			// send vote msg
-			votemsg := Message{
-				Type: VOTE,
+			// broadcast vote msg
+			msgs := make([]Message, receiver.n)
+			for i := 0; i < receiver.n; i++ {
+				msgs[i] = Message{
+					Type:       VOTE,
+					FromID:     receiver.id,
+					DestID:     i,
+					InstanceID: receiver.id,
+					VoteBuf:    msgReceived.VoteBuf,
+				}
 			}
 			receiver.voted = true
+			receiver.sendMsg(msgs)
 		}
-		if receiver.voteNum == receiver.n-receiver.t && !receiver.done {
+		if receiver.voteNum == receiver.n-receiver.t && receiver.voted && !receiver.done {
 			// out put stage
-
+			// reconstruct
 		}
 	}
 }

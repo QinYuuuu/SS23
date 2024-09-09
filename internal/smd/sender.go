@@ -24,6 +24,13 @@ func encrypt(k, m []byte) []byte {
 	return result
 }
 
+type sendBuf struct {
+	root_i     [][]byte
+	witness_ij []merkle.Witness
+	s_ij       []*big.Int
+	f_ij       []infectious.Share
+}
+
 func (s *Sender) Input(message [][]byte) {
 	if len(message) != s.n {
 		return
@@ -43,6 +50,7 @@ func (s *Sender) Input(message [][]byte) {
 	for i := 0; i < s.n; i++ {
 		chunk[i] = s.coder.Encode(c[i])
 	}
+	// compute merkle tree with root r_i
 	root := make([][]byte, s.n)
 	proof := make([][]merkle.Witness, s.n)
 	for i := 0; i < s.n; i++ {
@@ -55,6 +63,14 @@ func (s *Sender) Input(message [][]byte) {
 		proof[i] = make([]merkle.Witness, s.n)
 		for j := 0; j < s.n; j++ {
 			proof[i][j], _ = merkle.CreateWitness(merkleTree, j)
+		}
+	}
+	msgs := make([]Message, s.n)
+	for i := 0; i < s.n; i++ {
+		msgs[i] = Message{
+			FromID: s.id,
+			DestID: i,
+			Type:   SEND,
 		}
 	}
 }
